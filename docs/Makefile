@@ -1,31 +1,22 @@
-.PHONY: help serve build clean install
+.PHONY: serve serve-reload build clean help
 
 help:
-	@echo "TaskLib Documentation Build"
+	@echo "TaskLib Documentation"
 	@echo ""
-	@echo "Commands (using uv with --isolated):"
-	@echo "  make install    Install mkdocs via uv"
-	@echo "  make serve      Serve docs locally (http://localhost:8000)"
-	@echo "  make build      Build static documentation"
-	@echo "  make clean      Remove build artifacts"
-	@echo ""
-	@echo "Deploy:"
-	@echo "  GitHub Pages:   Push to gh-pages branch"
-	@echo "  Netlify:        Connect repo to Netlify"
-	@echo "  ReadTheDocs:    Import repo to Read the Docs"
-
-install:
-	cd .. && uv pip install --isolated mkdocs mkdocs-material
+	@echo "Available commands:"
+	@echo "  make serve        - Serve docs on http://localhost:8000"
+	@echo "  make serve-reload - Serve with auto-reload on file changes"
+	@echo "  make build        - Build static site"
+	@echo "  make clean        - Remove build artifacts"
 
 serve:
-	cd .. && uv run --isolated mkdocs serve
+	uv run mkdocs serve -f mkdocs.yml --dev-addr localhost:8000
+
+serve-reload:
+	uv run mkdocs serve -f mkdocs.yml --dev-addr localhost:8000
 
 build:
-	cd .. && uv run --isolated mkdocs build --site-dir site
+	uv run mkdocs build -f mkdocs.yml
 
 clean:
-	rm -rf ../site
-	find . -type d -name __pycache__ -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
-
-.DEFAULT_GOAL := help
+	rm -rf site/

@@ -1,4 +1,10 @@
-.PHONY: test test-unit test-integration uvlock run
+.PHONY: test test-unit test-integration uvlock run docs serve-docs
+
+docs:
+	cd docs && make help
+
+serve-docs:
+	cd docs && make serve
 
 test-unit:
 	uv run --extra dev pytest -m unit -v

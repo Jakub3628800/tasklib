@@ -2,127 +2,57 @@
 
 ## Requirements
 
-- **Python:** 3.13 or higher
-- **PostgreSQL:** 12 or higher
-- **pip or uv:** Package manager
+- Python 3.13+
+- PostgreSQL 12+
 
 ## Install TaskLib
 
-### Using pip
+=== "pip"
 
-```bash
-pip install tasklib
-```
+    ```bash
+    pip install tasklib
+    ```
 
-### Using uv
+=== "uv"
 
-```bash
-uv add tasklib
-```
-
-### From Source
-
-```bash
-git clone https://github.com/your-org/tasklib.git
-cd tasklib
-uv sync
-```
+    ```bash
+    uv add tasklib
+    ```
 
 ## Set Up PostgreSQL
 
-### Local Development
+=== "Docker"
 
-```bash
-# With Docker
-docker run -d \
-  -e POSTGRES_USER=tasklib \
-  -e POSTGRES_PASSWORD=tasklib_pass \
-  -e POSTGRES_DB=tasklib \
-  -p 5432:5432 \
-  postgres:15
+    ```bash
+    docker run -d \
+      -e POSTGRES_USER=tasklib \
+      -e POSTGRES_PASSWORD=tasklib_pass \
+      -e POSTGRES_DB=tasklib \
+      -p 5432:5432 \
+      postgres:15
+    ```
 
-# Or use docker-compose
-docker-compose up -d
-```
+=== "Local"
 
-### Connection URL
+    ```bash
+    # macOS with Homebrew
+    brew install postgresql@15
+    brew services start postgresql@15
 
-```
-postgresql://user:password@localhost:5432/database
-```
+    # Create database
+    createdb tasklib
+    ```
 
 ## Verify Installation
 
 ```python
-import tasklib
+from tasklib import task, Config
 
-print(tasklib.__version__)  # Should print: 0.1.0
-
-# Check imports
-from tasklib import task, submit_task, Config, TaskWorker
-
-print("✅ TaskLib installed successfully!")
+config = Config(database_url="postgresql://tasklib:tasklib_pass@localhost/tasklib")
+print("✅ Ready!")
 ```
 
 ## Next Steps
 
-- **[Quick Start](quick-start.md)** - Create your first task in 5 minutes
-- **[Your First Task](first-task.md)** - Step-by-step walkthrough
-
-## Troubleshooting
-
-### "ModuleNotFoundError: No module named 'tasklib'"
-
-```bash
-# Reinstall
-pip install --upgrade tasklib
-
-# Or verify installation
-pip show tasklib
-```
-
-### "psycopg.OperationalError: connection failed"
-
-```bash
-# Check PostgreSQL is running
-psql -U tasklib -d tasklib -c "SELECT 1;"
-
-# Or via Docker
-docker-compose ps
-```
-
-### "relation \"tasks\" does not exist"
-
-Run migrations:
-
-```python
-import tasklib
-
-config = tasklib.Config(database_url="postgresql://...")
-tasklib.init(config)  # Creates tables automatically
-```
-
-Or use Alembic:
-
-```bash
-alembic upgrade head
-```
-
-## Development Setup
-
-For contributors:
-
-```bash
-# Clone repo
-git clone <url>
-cd tasklib
-
-# Install with dev dependencies
-uv sync --extra dev
-
-# Start PostgreSQL
-docker-compose up -d
-
-# Run tests
-make test
-```
+- [**Quick Start**](quick-start.md) — 5 minute walkthrough
+- [**Your First Task**](first-task.md) — Step-by-step guide
