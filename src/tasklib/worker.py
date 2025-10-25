@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import signal
 import traceback
 import uuid
 from datetime import datetime, timedelta
