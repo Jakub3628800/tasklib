@@ -1,14 +1,11 @@
 [project]
-name = "tasklib-dashboard"
+name = "dashboard"
 version = "0.1.0"
-description = "TaskLib Dashboard API"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 dependencies = [
-    "fastapi==0.104.1",
-    "uvicorn[standard]==0.24.0",
-    "sqlalchemy==2.0.23",
-    "sqlmodel>=0.0.18",
+    "fastapi>=0.104.1",
+    "uvicorn[standard]>=0.24.0",
+    "sqlalchemy>=2.0.25",
     "psycopg[binary]>=3.2",
-    "pydantic==2.5.0",
-    "tasklib @ file://../tasklib",
+    "pydantic>=2.6.0",
 ]

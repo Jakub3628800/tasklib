@@ -1,15 +1,15 @@
 import os
+import json
 from typing import Optional
 from uuid import UUID
+from datetime import datetime
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine, desc, func, and_
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
-from sqlmodel import SQLModel
-from datetime import datetime
 
-from models import Task, TaskResponse, TaskStats, WorkerStats  # pyrefly: ignore
+from models import Base, Task, TaskResponse, TaskStats, WorkerStats
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/tasklib")
@@ -39,10 +39,9 @@ def get_db():
         db.close()
 
 
-@app.on_event("startup")  # pyrefly: ignore
-def startup():
-    """Create tables if they don't exist"""
-    SQLModel.metadata.create_all(bind=engine)
+@app.on_event("startup")
+def startup() -> None:
+    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -1243,4 +1242,5 @@ def get_dashboard_html():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8989)
+    port = int(os.getenv("PORT", "8696"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
