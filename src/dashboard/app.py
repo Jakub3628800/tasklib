@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from models import Base, Task, TaskResponse, TaskStats, WorkerStats
 
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/tasklib")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/tasklib")
 DASHBOARD_MODE = os.getenv("DASHBOARD_MODE", "readonly").lower()  # readonly or readwrite
 
 if DASHBOARD_MODE not in ("readonly", "readwrite"):
@@ -724,6 +724,141 @@ def get_dashboard_html():
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 24px;
+            position: relative;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .detail-section {
+            margin-bottom: 20px;
+        }
+
+        .detail-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 8px;
+        }
+
+        .detail-value {
+            font-size: 13px;
+            color: var(--text);
+            word-break: break-all;
+            padding: 8px;
+            background: var(--bg);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .detail-value.text {
+            font-family: inherit;
+        }
+
+        .detail-value.json {
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .detail-row {
+            grid-column: 1 / -1;
+        }
+
+        .clickable-row {
+            cursor: pointer;
+        }
+
+        .clickable-row:hover {
+            background: var(--border) !important;
+        }
     </style>
 </head>
 <body>
@@ -893,6 +1028,17 @@ def get_dashboard_html():
         </div>
     </div>
 
+    <!-- Task Detail Modal -->
+    <div id="task-detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-task-name"></h2>
+                <button class="modal-close" onclick="closeTaskModal()">✕</button>
+            </div>
+            <div class="detail-grid" id="modal-task-details"></div>
+        </div>
+    </div>
+
     <script>
         let currentOffset = 0;
         const LIMIT = 50;
@@ -1027,7 +1173,7 @@ def get_dashboard_html():
                     failed: '❌'
                 }[task.state] || '•';
 
-                html += '<tr>';
+                html += `<tr class="clickable-row" onclick="openTaskModal('${task.id}')">`;
                 html += `<td><span class="task-name">${escapeHtml(task.name)}</span><span class="task-id">${task.id.substring(0, 12)}...</span></td>`;
                 html += `<td><span class="status-badge ${stateClass}">${task.state}</span></td>`;
                 html += `<td>${formatDate(task.created_at)}</td>`;
@@ -1039,7 +1185,7 @@ def get_dashboard_html():
                 if (window.dashboardMode === 'readwrite') {
                     let actions = '';
                     if (task.state === 'pending') {
-                        actions += `<button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="cancelTask('${task.id}')">Cancel</button>`;
+                        actions += `<button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="event.stopPropagation(); cancelTask('${task.id}')">Cancel</button>`;
                     }
                     html += `<td>${actions || '–'}</td>`;
                 }
@@ -1200,6 +1346,135 @@ def get_dashboard_html():
             document.getElementById('create-error-message').innerHTML = '';
         }
 
+        async function openTaskModal(taskId) {
+            try {
+                const response = await fetch(`/api/task/${taskId}`);
+                if (!response.ok) throw new Error('Failed to load task');
+
+                const task = await response.json();
+                displayTaskDetail(task);
+
+                const modal = document.getElementById('task-detail-modal');
+                modal.classList.add('show');
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        function closeTaskModal() {
+            const modal = document.getElementById('task-detail-modal');
+            modal.classList.remove('show');
+        }
+
+        function displayTaskDetail(task) {
+            document.getElementById('modal-task-name').textContent = task.name;
+
+            let html = '';
+
+            // Task ID
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">Task ID</div>';
+            html += `<div class="detail-value">${task.id}</div>`;
+            html += '</div>';
+
+            // State
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">State</div>';
+            html += `<div class="detail-value text"><span class="status-badge status-${task.state}">${task.state}</span></div>`;
+            html += '</div>';
+
+            // Priority
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">Priority</div>';
+            html += `<div class="detail-value text">${task.priority}</div>`;
+            html += '</div>';
+
+            // Worker ID
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">Worker ID</div>';
+            html += `<div class="detail-value">${task.worker_id ? task.worker_id : '–'}</div>`;
+            html += '</div>';
+
+            // Retry Count
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">Retries</div>';
+            html += `<div class="detail-value text">${task.retry_count}/${task.max_retries}</div>`;
+            html += '</div>';
+
+            // Created At
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">Created At</div>';
+            html += `<div class="detail-value text">${formatDate(task.created_at)}</div>`;
+            html += '</div>';
+
+            // Scheduled At
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">Scheduled At</div>';
+            html += `<div class="detail-value text">${formatDate(task.scheduled_at)}</div>`;
+            html += '</div>';
+
+            // Started At
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">Started At</div>';
+            html += `<div class="detail-value text">${task.started_at ? formatDate(task.started_at) : '–'}</div>`;
+            html += '</div>';
+
+            // Completed At
+            html += '<div class="detail-section">';
+            html += '<div class="detail-label">Completed At</div>';
+            html += `<div class="detail-value text">${task.completed_at ? formatDate(task.completed_at) : '–'}</div>`;
+            html += '</div>';
+
+            // Args
+            html += '<div class="detail-section detail-row">';
+            html += '<div class="detail-label">Arguments</div>';
+            html += `<div class="detail-value json">${JSON.stringify(task.args, null, 2)}</div>`;
+            html += '</div>';
+
+            // Kwargs
+            html += '<div class="detail-section detail-row">';
+            html += '<div class="detail-label">Keyword Arguments</div>';
+            html += `<div class="detail-value json">${JSON.stringify(task.kwargs, null, 2)}</div>`;
+            html += '</div>';
+
+            // Tags
+            html += '<div class="detail-section detail-row">';
+            html += '<div class="detail-label">Tags</div>';
+            html += `<div class="detail-value json">${JSON.stringify(task.tags, null, 2)}</div>`;
+            html += '</div>';
+
+            // Result
+            if (task.result) {
+                html += '<div class="detail-section detail-row">';
+                html += '<div class="detail-label">Result</div>';
+                html += `<div class="detail-value json">${JSON.stringify(task.result, null, 2)}</div>`;
+                html += '</div>';
+            }
+
+            // Error
+            if (task.error) {
+                html += '<div class="detail-section detail-row">';
+                html += '<div class="detail-label">Error</div>';
+                html += `<div class="detail-value json" style="color: var(--failed);">${escapeHtml(task.error)}</div>`;
+                html += '</div>';
+            }
+
+            // Mock Logs section
+            html += '<div class="detail-section detail-row">';
+            html += '<div class="detail-label">Logs</div>';
+            html += '<div class="detail-value json" style="color: var(--text-secondary);">';
+            html += '[2024-10-25 10:23:45] Task started\n';
+            html += '[2024-10-25 10:23:46] Processing input data...\n';
+            html += '[2024-10-25 10:23:47] Validation passed\n';
+            html += '[2024-10-25 10:23:48] Executing main logic...\n';
+            html += '[2024-10-25 10:23:49] Writing results to database\n';
+            html += '[2024-10-25 10:23:50] Task completed successfully';
+            html += '</div>';
+            html += '</div>';
+
+            document.getElementById('modal-task-details').innerHTML = html;
+        }
+
         async function cancelTask(taskId) {
             if (!confirm('Are you sure you want to cancel this task?')) {
                 return;
@@ -1221,6 +1496,13 @@ def get_dashboard_html():
                 alert(`Error: ${error.message}`);
             }
         }
+
+        // Close modal when clicking outside
+        document.getElementById('task-detail-modal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeTaskModal();
+            }
+        });
 
         // Initial load
         loadMode();
