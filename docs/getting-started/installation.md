@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- **Python:** 3.12 or higher
+- **Python:** 3.13 or higher
 - **PostgreSQL:** 12 or higher
 - **pip or uv:** Package manager
 

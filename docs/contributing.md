@@ -6,7 +6,7 @@ We love contributions! This document explains how to contribute to TaskLib.
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.13+
 - PostgreSQL 13+
 - `uv` package manager
 

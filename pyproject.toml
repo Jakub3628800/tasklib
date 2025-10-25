@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Jakub Kriz", email = "jakubykriz@gmail.com" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "sqlmodel>=0.0.18",
     "psycopg[binary]>=3.2",
@@ -21,7 +21,7 @@ dev = [
 ]
 
 [project.scripts]
-tasklib-worker = "tasklib.cli:main"
+tasklib = "tasklib.cli:main"
 
 [build-system]
 requires = ["uv_build>=0.9.3,<0.10.0"]

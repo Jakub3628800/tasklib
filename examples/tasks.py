@@ -7,6 +7,14 @@ from tasklib import task
 
 
 @task
+def hello_world() -> str:
+    """Simple hello world task."""
+    message = "Hello, World!"
+    print(message)
+    return message
+
+
+@task
 def simple_add(a: int, b: int) -> int:
     """Simple task: add two numbers."""
     print(f"Adding {a} + {b}")

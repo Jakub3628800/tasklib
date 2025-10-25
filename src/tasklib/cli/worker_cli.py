@@ -1,70 +1,20 @@
-"""TaskLib worker CLI."""
+"""TaskLib worker command."""
 
 import asyncio
 import logging
-import signal
 import sys
 from typing import Optional
 
 import click
-import yaml
 
 from tasklib import Config, init, TaskWorker
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+from .main import import_task_modules, load_config_file, main
+
 logger = logging.getLogger("tasklib")
 
 
-class WorkerContext:
-    """Context for managing worker lifecycle."""
-
-    def __init__(self, worker: TaskWorker):
-        self.worker = worker
-        self.running = True
-
-    async def run(self) -> None:
-        """Run worker with graceful shutdown support."""
-        loop = asyncio.get_event_loop()
-
-        def handle_shutdown(signum: int, frame: object) -> None:
-            logger.info("Received shutdown signal, gracefully stopping...")
-            self.running = False
-
-        loop.add_signal_handler(signal.SIGTERM, handle_shutdown)
-        loop.add_signal_handler(signal.SIGINT, handle_shutdown)
-
-        try:
-            await self.worker.run()
-        except KeyboardInterrupt:
-            logger.info("Interrupted, shutting down...")
-
-
-def load_config_file(config_path: str) -> dict:
-    """Load YAML configuration file."""
-    try:
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-            return config or {}
-    except FileNotFoundError as e:
-        raise click.ClickException(f"Config file not found: {config_path}") from e
-    except yaml.YAMLError as e:
-        raise click.ClickException(f"Invalid YAML in config file: {e}") from e
-
-
-def import_task_modules(modules: list[str]) -> None:
-    """Import task modules to register tasks."""
-    for module_name in modules:
-        try:
-            __import__(module_name)
-            logger.debug(f"Imported task module: {module_name}")
-        except ImportError as e:
-            raise click.ClickException(f"Failed to import task module '{module_name}': {e}")
-
-
-@click.command()
+@main.command()
 @click.option(
     "--db-url",
     envvar="DATABASE_URL",
@@ -123,8 +73,7 @@ def import_task_modules(modules: list[str]) -> None:
     default="INFO",
     help="Logging level",
 )
-@click.version_option()
-def main(
+def worker(
     db_url: Optional[str],
     config: Optional[str],
     task_module: tuple[str, ...],
@@ -154,12 +103,16 @@ def main(
     if not task_modules and config:
         task_modules = config_data.get("tasks", {}).get("modules", [])
 
-    if task_modules:
-        logger.info(f"Importing task modules: {', '.join(task_modules)}")
-        import_task_modules(task_modules)
-    else:
-        logger.warning("No task modules imported. Tasks may not be registered. Use --task-module to specify modules.")
+    if not task_modules:
+        raise click.ClickException(
+            "No task modules provided. Use --task-module to specify at least one module.\n"
+            "Example: tasklib worker --db-url postgresql+psycopg://... --task-module myapp.tasks"
+        )
 
+    logger.info(f"Importing task modules: {', '.join(task_modules)}")
+    import_task_modules(task_modules)
+
+    # Build Config with only Config-specific parameters
     config_kwargs: dict = {
         "database_url": final_db_url,
     }
@@ -167,16 +120,6 @@ def main(
         config_kwargs["worker_id"] = worker_id
     elif "worker" in config_data and "id" in config_data["worker"]:
         config_kwargs["worker_id"] = config_data["worker"]["id"]
-
-    if concurrency is not None:
-        config_kwargs["concurrency"] = concurrency
-    elif "worker" in config_data and "concurrency" in config_data["worker"]:
-        config_kwargs["concurrency"] = config_data["worker"]["concurrency"]
-
-    if poll_interval is not None:
-        config_kwargs["poll_interval_seconds"] = poll_interval
-    elif "worker" in config_data and "poll_interval_seconds" in config_data["worker"]:
-        config_kwargs["poll_interval_seconds"] = config_data["worker"]["poll_interval_seconds"]
 
     if max_retries is not None:
         config_kwargs["max_retries"] = max_retries
@@ -193,24 +136,25 @@ def main(
     except Exception as e:
         raise click.ClickException(f"Invalid configuration: {e}")
 
+    # Worker-specific parameters
+    worker_concurrency = concurrency or (config_data.get("worker", {}).get("concurrency") if config else None) or 1
+    worker_poll_interval = poll_interval or (config_data.get("worker", {}).get("poll_interval_seconds") if config else None) or 1.0
+
     logger.info("Starting TaskLib worker...")
     logger.info(f"  Worker ID: {cfg.worker_id}")
-    logger.info(f"  Concurrency: {cfg.concurrency}")
-    logger.info(f"  Poll interval: {cfg.poll_interval_seconds}s")
+    logger.info(f"  Concurrency: {worker_concurrency}")
+    logger.info(f"  Poll interval: {worker_poll_interval}s")
+    logger.info(f"  Task modules: {', '.join(task_modules)}")
 
-    asyncio.run(_run_worker(cfg))
+    asyncio.run(_run_worker(cfg, worker_concurrency, worker_poll_interval))
 
 
-async def _run_worker(config: Config) -> None:
+async def _run_worker(config: Config, concurrency: int, poll_interval: float) -> None:
     """Initialize and run the worker."""
     try:
-        await init(config)
-        worker = TaskWorker(config)
+        init(config)  # init() is not async
+        worker = TaskWorker(config, concurrency=concurrency, poll_interval_seconds=poll_interval)
         await worker.run()
     except Exception as e:
         logger.error(f"Worker error: {e}", exc_info=True)
         sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

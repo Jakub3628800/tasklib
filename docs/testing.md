@@ -223,7 +223,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - run: pip install uv
       - run: uv sync --extra dev
       - run: uv run pytest tests/ -v

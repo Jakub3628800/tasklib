@@ -409,6 +409,6 @@ Perfect for teams that want durable background jobs without the complexity of Ce
 ---
 
 **Status:** Stable v1.0
-**Python:** 3.12+
+**Python:** 3.13+
 **Database:** PostgreSQL 12+
 **License:** MIT
