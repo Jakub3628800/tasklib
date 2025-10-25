@@ -72,7 +72,6 @@ def submit_task_cmd(
     if not final_db_url:
         raise click.ClickException("DATABASE_URL not provided. Use --db-url flag or DATABASE_URL env var")
 
-    # Import task modules
     task_modules = list(task_module)
     if task_modules:
         logger.info(f"Importing task modules: {', '.join(task_modules)}")
@@ -80,20 +79,17 @@ def submit_task_cmd(
     else:
         raise click.ClickException("At least one task module required. Use --task-module to specify.")
 
-    # Create config and init
     try:
         cfg = Config(database_url=final_db_url)
     except Exception as e:
         raise click.ClickException(f"Invalid configuration: {e}")
 
-    # Parse arguments
     kwargs = {}
     for arg_str in arg:
         if "=" not in arg_str:
             raise click.ClickException(f"Invalid argument format: {arg_str}. Use key=value")
         key, value = arg_str.split("=", 1)
 
-        # Try to parse as int, float, bool, or keep as string
         try:
             kwargs[key] = int(value)
         except ValueError:
@@ -105,14 +101,12 @@ def submit_task_cmd(
                 else:
                     kwargs[key] = value
 
-    # Submit task
     async def submit():
         init(cfg)
 
         from tasklib import submit_task as submit_func
         from tasklib.core import _task_registry
 
-        # Get task function from registry
         if task_name not in _task_registry:
             raise click.ClickException(
                 f"Task '{task_name}' not found. Available tasks: {', '.join(_task_registry.keys()) or 'none'}"
@@ -125,7 +119,7 @@ def submit_task_cmd(
 
     try:
         task_id = asyncio.run(submit())
-        click.secho(f"✅ Task submitted: {task_id}", fg="green")
+        click.secho(f"Task submitted: {task_id}", fg="green")
         click.echo(f"   Task: {task_name}")
         if kwargs:
             click.echo(f"   Args: {kwargs}")

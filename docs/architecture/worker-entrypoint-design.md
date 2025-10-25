@@ -3,9 +3,9 @@
 ## The Problem
 
 Current state for a user integrating TaskLib:
-1. ✅ Easy: Run migration (`alembic upgrade head`)
-2. ❌ Hard: Write `worker.py` to initialize and run the worker
-3. ❌ Hard: Figure out how to run it in Docker/docker-compose/systemd/K8s
+1. Easy: Run migration (`alembic upgrade head`)
+2. Hard: Write `worker.py` to initialize and run the worker
+3. Hard: Figure out how to run it in Docker/docker-compose/systemd/K8s
 
 **Goal**: Make it so easy that it's just ONE command, with optional configuration.
 
@@ -90,17 +90,17 @@ logging:
 ```
 
 ### Pros
-- ✅ Standard Python practice (pytest, black, pip, etc. all do this)
-- ✅ Works everywhere: Docker, systemd, K8s, cron, manual
-- ✅ Easy to call: `tasklib-worker` or `uv run tasklib-worker`
-- ✅ Flexible configuration (env vars, CLI args, config file)
-- ✅ Task module discovery built-in
-- ✅ Graceful shutdown on SIGTERM/SIGINT
-- ✅ Clear error messages for misconfiguration
+- Standard Python practice (pytest, black, pip, etc. all do this)
+- Works everywhere: Docker, systemd, K8s, cron, manual
+- Easy to call: `tasklib-worker` or `uv run tasklib-worker`
+- Flexible configuration (env vars, CLI args, config file)
+- Task module discovery built-in
+- Graceful shutdown on SIGTERM/SIGINT
+- Clear error messages for misconfiguration
 
 ### Cons
-- ❌ Requires users to `pip install tasklib` (or use `uv add tasklib`)
-- ❌ Entry point needs testing
+- Requires users to `pip install tasklib` (or use `uv add tasklib`)
+- Entry point needs testing
 
 ### Implementation Details
 
@@ -211,15 +211,15 @@ uv run tasklib
 ```
 
 ### Pros
-- ✅ No CLI package dependencies needed
-- ✅ Works with `uv run` out of the box
-- ✅ Simple implementation
-- ✅ Good fallback option
+- No CLI package dependencies needed
+- Works with `uv run` out of the box
+- Simple implementation
+- Good fallback option
 
 ### Cons
-- ❌ Less discoverable than CLI
-- ❌ Only supports environment variables (no config file)
-- ❌ Task module import not handled
+- Less discoverable than CLI
+- Only supports environment variables (no config file)
+- Task module import not handled
 
 ---
 
@@ -294,15 +294,15 @@ services:
 ```
 
 ### Pros
-- ✅ Isolated environment
-- ✅ Easy scaling (Docker Compose, K8s)
-- ✅ Same environment everywhere
-- ✅ Pre-built image available (optional)
+- Isolated environment
+- Easy scaling (Docker Compose, K8s)
+- Same environment everywhere
+- Pre-built image available (optional)
 
 ### Cons
-- ❌ Requires Docker installed
-- ❌ Extra infrastructure
-- ❌ Configuration still needed
+- Requires Docker installed
+- Extra infrastructure
+- Configuration still needed
 
 ---
 
@@ -340,13 +340,13 @@ sudo systemctl start tasklib-worker
 ```
 
 ### Pros
-- ✅ Native Linux integration
-- ✅ Auto-restart on failure
-- ✅ Multiple instances easy (worker@1.service, worker@2.service)
+- Native Linux integration
+- Auto-restart on failure
+- Multiple instances easy (worker@1.service, worker@2.service)
 
 ### Cons
-- ❌ Linux-only
-- ❌ Requires systemd
+- Linux-only
+- Requires systemd
 
 ---
 
@@ -392,14 +392,14 @@ spec:
 ```
 
 ### Pros
-- ✅ Cloud-native
-- ✅ Auto-scaling
-- ✅ Self-healing
-- ✅ Multi-region ready
+- Cloud-native
+- Auto-scaling
+- Self-healing
+- Multi-region ready
 
 ### Cons
-- ❌ Requires K8s cluster
-- ❌ Complex setup
+- Requires K8s cluster
+- Complex setup
 
 ---
 
@@ -458,13 +458,13 @@ uv run python worker.py
 ```
 
 ### Pros
-- ✅ Maximum flexibility
-- ✅ No installation needed
-- ✅ Users own the code
+- Maximum flexibility
+- No installation needed
+- Users own the code
 
 ### Cons
-- ❌ Each project maintains their own script
-- ❌ Less discoverable
+- Each project maintains their own script
+- Less discoverable
 
 ---
 
@@ -679,15 +679,15 @@ All options are non-breaking:
 
 ## Success Criteria
 
-✅ A new user can:
+A new user can:
 1. `uv add tasklib`
 2. Run migration
 3. Do `tasklib-worker --import-modules myapp.tasks`
 4. Submit tasks and they execute
 
-✅ All within 5 minutes with documentation
+All within 5 minutes with documentation
 
-✅ Deployment options for all environments:
+Deployment options for all environments:
 - Local development
 - Docker/Docker Compose
 - Systemd

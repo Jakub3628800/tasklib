@@ -81,7 +81,6 @@ def init_cmd(
         config_data = load_config_file(config)
         logger.info(f"Loaded config from {config}")
 
-    # Use provided db_url or build from components
     final_db_url = db_url or config_data.get("database", {}).get("url")
     if not final_db_url:
         final_db_url = f"postgresql+psycopg://{user}:{password}@{host}:{port}/{database}"
@@ -92,7 +91,6 @@ def init_cmd(
     except Exception as e:
         raise click.ClickException(f"Invalid configuration: {e}")
 
-    # Check if tables already exist
     from sqlalchemy import inspect
     from sqlalchemy import create_engine as sa_create_engine
 
@@ -103,7 +101,7 @@ def init_cmd(
 
         if "tasks" in tables:
             if not force:
-                click.secho("⚠️  The 'tasks' table already exists", fg="yellow")
+                click.secho("The 'tasks' table already exists", fg="yellow")
                 click.echo("Database is already initialized.")
                 click.echo("To override and reinitialize, run: tasklib init --force")
                 return
@@ -112,7 +110,7 @@ def init_cmd(
             logger.info("Initializing TaskLib database...")
 
         init(cfg)
-        click.secho("✅ Database initialized successfully", fg="green")
+        click.secho("Database initialized successfully", fg="green")
         click.echo(f"   Database: {database}")
         click.echo(f"   Host: {host}:{port}")
         click.echo("   Tables: tasks")

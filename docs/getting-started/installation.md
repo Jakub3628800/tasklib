@@ -49,7 +49,7 @@
 from tasklib import task, Config
 
 config = Config(database_url="postgresql://tasklib:tasklib_pass@localhost/tasklib")
-print("✅ Ready!")
+print("Ready!")
 ```
 
 ## Next Steps

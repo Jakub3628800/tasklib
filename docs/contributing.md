@@ -141,4 +141,4 @@ Allows users to customize exponential backoff multiplier for task retries.
 
 By contributing to TaskLib, you agree that your contributions will be licensed under the MIT License.
 
-Thank you for contributing to TaskLib! 🚀
+Thank you for contributing to TaskLib!

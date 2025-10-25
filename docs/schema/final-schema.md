@@ -352,7 +352,7 @@ Or with cron:
 
 ## The Story of a Task
 
-### 1️⃣ User submits task (Python)
+### 1. User submits task (Python)
 
 ```python
 task_id = await tasklib.submit_task(
@@ -376,7 +376,7 @@ task_id = await tasklib.submit_task(
 }
 ```
 
-### 2️⃣ Worker polls (SELECT FOR UPDATE)
+### 2. Worker polls (SELECT FOR UPDATE)
 
 Worker runs this query every 1 second:
 
@@ -401,7 +401,7 @@ FOR UPDATE;  -- Atomic lock
 }
 ```
 
-### 3️⃣ Worker executes task
+### 3. Worker executes task
 
 Python function runs:
 
@@ -413,7 +413,7 @@ result = await loop.run_in_executor(
 # Returns: True
 ```
 
-### 4️⃣ Worker updates DB with result
+### 4. Worker updates DB with result
 
 ```json
 {
@@ -425,7 +425,7 @@ result = await loop.run_in_executor(
 }
 ```
 
-### 5️⃣ Application queries result
+### 5. Application queries result
 
 ```python
 task = tasklib.get_task(task_id)
