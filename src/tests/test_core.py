@@ -17,6 +17,15 @@ def config():
     )
 
 
+@pytest.fixture(autouse=True)
+def clear_task_registry():
+    """Clear task registry before each test."""
+    from tasklib.core import _task_registry
+    _task_registry.clear()
+    yield
+    _task_registry.clear()
+
+
 @pytest.fixture
 def init_tasklib(config):
     """Initialize tasklib for testing."""

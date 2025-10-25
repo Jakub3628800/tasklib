@@ -9,8 +9,8 @@ from pydantic import ValidationError, create_model
 from sqlmodel import Session, create_engine, select
 
 from .config import Config
+from .db import Task
 from .exceptions import TaskAlreadyRegistered, TaskExecutionError, TaskNotFound
-from .models import Task
 
 _task_registry: dict[str, tuple[Callable, dict]] = {}
 _config: Optional[Config] = None
