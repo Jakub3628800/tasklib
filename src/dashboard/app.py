@@ -21,7 +21,14 @@ if DASHBOARD_MODE not in ("readonly", "readwrite"):
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-app = FastAPI(title="TaskLib Dashboard")
+app = FastAPI(
+    title="TaskLib Dashboard API",
+    description="Real-time task monitoring and management API with ReDoc documentation",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 
 
 def check_write_mode():
@@ -869,8 +876,13 @@ def get_dashboard_html():
                     <h1>Task Dashboard</h1>
                     <p>Real-time task monitoring and management</p>
                 </div>
-                <div id="mode-badge" style="padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;">
-                    Loading...
+                <div style="display: flex; gap: 16px; align-items: center;">
+                    <a href="/redoc" target="_blank" style="padding: 8px 14px; background: var(--primary); color: white; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; transition: all 0.2s ease;" onmouseover="this.style.background='var(--primary-dark)'" onmouseout="this.style.background='var(--primary)'">
+                        📚 API Docs
+                    </a>
+                    <div id="mode-badge" style="padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;">
+                        Loading...
+                    </div>
                 </div>
             </div>
         </div>

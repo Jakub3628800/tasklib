@@ -42,6 +42,7 @@ class TaskResponse(BaseModel):
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
     created_at: datetime
+    args: dict
     kwargs: dict
     result: Optional[dict]
     error: Optional[str]
