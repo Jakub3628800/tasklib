@@ -1,21 +1,33 @@
 import os
 from typing import Optional
+from uuid import UUID
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine, desc, func, and_
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 from sqlmodel import SQLModel
+from datetime import datetime
 
 from models import Task, TaskResponse, TaskStats, WorkerStats  # pyrefly: ignore
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/tasklib")
+DASHBOARD_MODE = os.getenv("DASHBOARD_MODE", "readonly").lower()  # readonly or readwrite
+
+if DASHBOARD_MODE not in ("readonly", "readwrite"):
+    raise ValueError("DASHBOARD_MODE must be 'readonly' or 'readwrite'")
 
 engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app = FastAPI(title="TaskLib Dashboard")
+
+
+def check_write_mode():
+    """Raise exception if dashboard is in readonly mode"""
+    if DASHBOARD_MODE == "readonly":
+        raise HTTPException(status_code=403, detail="Dashboard is in read-only mode")
 
 
 @contextmanager
@@ -160,6 +172,75 @@ def get_task(task_id: str):
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
         return TaskResponse.from_orm(task)
+
+
+@app.get("/api/mode")
+def get_mode():
+    """Get dashboard mode (readonly or readwrite)"""
+    return {"mode": DASHBOARD_MODE}
+
+
+@app.patch("/api/tasks/{task_id}/cancel")
+def cancel_task(task_id: str):
+    """Cancel a pending task"""
+    check_write_mode()
+
+    try:
+        task_uuid = UUID(task_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid task ID")
+
+    with get_db() as db:
+        task = db.query(Task).filter(Task.id == task_uuid).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        if task.state != "pending":
+            raise HTTPException(status_code=400, detail=f"Can only cancel pending tasks, current state: {task.state}")
+
+        task.state = "cancelled"
+        db.add(task)
+        db.commit()
+        db.refresh(task)
+
+        return TaskResponse.from_orm(task)
+
+
+@app.post("/api/tasks", response_model=TaskResponse)
+def create_task(
+    name: str = Query(...),
+    args: Optional[str] = Query(None),
+    kwargs: Optional[str] = Query(None),
+    priority: int = Query(0),
+):
+    """Create a new task"""
+    check_write_mode()
+
+    import json
+    from uuid import uuid4
+
+    try:
+        task_args = json.loads(args) if args else {}
+        task_kwargs = json.loads(kwargs) if kwargs else {}
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON in args or kwargs")
+
+    with get_db() as db:
+        new_task = Task(
+            id=uuid4(),
+            name=name,
+            args=task_args,
+            kwargs=task_kwargs,
+            state="pending",
+            priority=priority,
+            scheduled_at=datetime.utcnow(),
+            created_at=datetime.utcnow(),
+        )
+        db.add(new_task)
+        db.commit()
+        db.refresh(new_task)
+
+        return TaskResponse.from_orm(new_task)
 
 
 def get_dashboard_html():
@@ -649,8 +730,15 @@ def get_dashboard_html():
 <body>
     <header>
         <div class="container">
-            <h1>Task Dashboard</h1>
-            <p>Real-time task monitoring and management</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>Task Dashboard</h1>
+                    <p>Real-time task monitoring and management</p>
+                </div>
+                <div id="mode-badge" style="padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;">
+                    Loading...
+                </div>
+            </div>
         </div>
     </header>
 
@@ -720,6 +808,37 @@ def get_dashboard_html():
                 </div>
                 <div class="stat-number" id="stat-failed-permanent">0</div>
             </div>
+        </div>
+
+        <div id="create-task-section" class="main-content" style="display: none; margin-bottom: 24px;">
+            <h2 class="section-title">Create New Task</h2>
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="create-task-name">Task Name *</label>
+                    <input type="text" id="create-task-name" placeholder="e.g., send_email, process_data">
+                </div>
+
+                <div class="filter-group">
+                    <label for="create-task-priority">Priority</label>
+                    <input type="number" id="create-task-priority" placeholder="0" min="0" value="0">
+                </div>
+
+                <div class="filter-group">
+                    <label for="create-task-args">Args (JSON)</label>
+                    <input type="text" id="create-task-args" placeholder='{}' value="{}">
+                </div>
+
+                <div class="filter-group">
+                    <label for="create-task-kwargs">Kwargs (JSON)</label>
+                    <input type="text" id="create-task-kwargs" placeholder='{}' value="{}">
+                </div>
+
+                <div class="filter-actions">
+                    <button class="btn-primary" onclick="createTask()">Create Task</button>
+                    <button class="btn-secondary" onclick="clearCreateForm()">Reset</button>
+                </div>
+            </div>
+            <div id="create-error-message"></div>
         </div>
 
         <div class="main-content">
@@ -895,6 +1014,9 @@ def get_dashboard_html():
             html += '<th>Worker</th>';
             html += '<th>Retries</th>';
             html += '<th>Priority</th>';
+            if (window.dashboardMode === 'readwrite') {
+                html += '<th>Actions</th>';
+            }
             html += '</tr></thead><tbody>';
 
             tasks.forEach(task => {
@@ -915,6 +1037,13 @@ def get_dashboard_html():
                 html += `<td style="font-family: monospace; font-size: 12px;">${task.worker_id ? task.worker_id.substring(0, 8) : '–'}</td>`;
                 html += `<td>${task.retry_count}/${task.max_retries}</td>`;
                 html += `<td>${task.priority}</td>`;
+                if (window.dashboardMode === 'readwrite') {
+                    let actions = '';
+                    if (task.state === 'pending') {
+                        actions += `<button class="btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="cancelTask('${task.id}')">Cancel</button>`;
+                    }
+                    html += `<td>${actions || '–'}</td>`;
+                }
                 html += '</tr>';
             });
 
@@ -1001,7 +1130,101 @@ def get_dashboard_html():
             clearTimeFilter();
         }
 
+        async function loadMode() {
+            try {
+                const response = await fetch('/api/mode');
+                const data = await response.json();
+                window.dashboardMode = data.mode;
+
+                const badge = document.getElementById('mode-badge');
+                if (data.mode === 'readwrite') {
+                    badge.textContent = '✏️ Read & Write';
+                    badge.style.background = 'rgba(59, 130, 246, 0.2)';
+                    badge.style.color = 'var(--primary)';
+                    document.getElementById('create-task-section').style.display = 'block';
+                } else {
+                    badge.textContent = '👁️ Read Only';
+                    badge.style.background = 'rgba(107, 114, 128, 0.2)';
+                    badge.style.color = 'var(--text-secondary)';
+                    document.getElementById('create-task-section').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading mode:', error);
+            }
+        }
+
+        async function createTask() {
+            const name = document.getElementById('create-task-name').value.trim();
+            if (!name) {
+                document.getElementById('create-error-message').innerHTML = '<div class="error">Task name is required</div>';
+                return;
+            }
+
+            const argsText = document.getElementById('create-task-args').value;
+            const kwargsText = document.getElementById('create-task-kwargs').value;
+            const priority = document.getElementById('create-task-priority').value;
+
+            const params = new URLSearchParams({
+                name: name,
+                args: argsText,
+                kwargs: kwargsText,
+                priority: priority
+            });
+
+            try {
+                const response = await fetch(`/api/tasks?${params}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to create task');
+                }
+
+                const task = await response.json();
+                document.getElementById('create-error-message').innerHTML = '<div class="error" style="background: rgba(59, 130, 246, 0.1); color: var(--primary); border-left-color: var(--primary);">✓ Task created successfully</div>';
+                clearCreateForm();
+                setTimeout(() => {
+                    loadTasks();
+                    loadStats();
+                }, 500);
+            } catch (error) {
+                document.getElementById('create-error-message').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function clearCreateForm() {
+            document.getElementById('create-task-name').value = '';
+            document.getElementById('create-task-priority').value = '0';
+            document.getElementById('create-task-args').value = '{}';
+            document.getElementById('create-task-kwargs').value = '{}';
+            document.getElementById('create-error-message').innerHTML = '';
+        }
+
+        async function cancelTask(taskId) {
+            if (!confirm('Are you sure you want to cancel this task?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/cancel`, {
+                    method: 'PATCH'
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to cancel task');
+                }
+
+                loadTasks();
+                loadStats();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
         // Initial load
+        loadMode();
         loadStats();
         loadTasks();
         loadWorkers();
