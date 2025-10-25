@@ -34,6 +34,35 @@ def import_task_modules(modules: list[str]) -> None:
             raise click.ClickException(f"Failed to import task module '{module_name}': {e}")
 
 
+def get_config_value(cli_value, config_dict: dict, config_key: str, default=None):
+    """Get config value with priority: CLI flag > config file > default.
+
+    Args:
+        cli_value: Value from CLI flag (if provided)
+        config_dict: Configuration dictionary from config file
+        config_key: Dot-separated key path in config dict (e.g., "database.url")
+        default: Default value if not found
+
+    Returns:
+        The resolved config value
+
+    Example:
+        db_url = get_config_value(cli_db_url, config_data, "database.url")
+    """
+    if cli_value is not None:
+        return cli_value
+
+    keys = config_key.split(".")
+    current = config_dict
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return default
+
+    return current if current is not None else default
+
+
 @click.group()
 @click.version_option()
 def main() -> None:
