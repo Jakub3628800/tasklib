@@ -5,8 +5,9 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import create_engine, desc, func, and_
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
+from sqlmodel import SQLModel
 
-from models import Base, Task, TaskResponse, TaskStats, WorkerStats  # pyrefly: ignore
+from models import Task, TaskResponse, TaskStats, WorkerStats  # pyrefly: ignore
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/tasklib")
@@ -29,7 +30,7 @@ def get_db():
 @app.on_event("startup")  # pyrefly: ignore
 def startup():
     """Create tables if they don't exist"""
-    Base.metadata.create_all(bind=engine)
+    SQLModel.metadata.create_all(bind=engine)
 
 
 @app.get("/", response_class=HTMLResponse)
