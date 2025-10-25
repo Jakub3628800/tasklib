@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel
-from sqlalchemy import Column, String, DateTime, Integer, JSON, Text, create_engine
+from sqlalchemy import Column, String, DateTime, Integer, JSON, Text
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
 

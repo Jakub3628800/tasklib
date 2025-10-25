@@ -1,7 +1,7 @@
 import os
 import json
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from datetime import datetime
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse
@@ -27,7 +27,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    openapi_url="/openapi.json",
 )
 
 
@@ -221,9 +221,6 @@ def create_task(
 ):
     """Create a new task"""
     check_write_mode()
-
-    import json
-    from uuid import uuid4
 
     try:
         task_args = json.loads(args) if args else {}
