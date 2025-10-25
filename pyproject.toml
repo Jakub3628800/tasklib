@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Jakub Kriz", email = "jakubykriz@gmail.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "sqlmodel>=0.0.18",
     "psycopg[binary]>=3.2",
