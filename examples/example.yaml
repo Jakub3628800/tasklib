@@ -1,0 +1,49 @@
+# TaskLib Example Configuration
+#
+# Use this config file to run the worker with:
+#   tasklib-worker --config examples/example.yaml
+
+# Database configuration (required)
+database:
+  url: postgresql://tasklib:tasklib_pass@localhost:5432/tasklib
+
+# Worker settings
+worker:
+  # Unique identifier for this worker
+  id: example-worker-1
+
+  # Number of tasks to execute concurrently
+  # For these examples, we use 2 to see tasks running in sequence
+  concurrency: 2
+
+  # How often to check for new tasks (in seconds)
+  # Faster polling for examples (normally 1.0)
+  poll_interval_seconds: 0.5
+
+  # Timeout for claiming tasks (seconds)
+  lock_timeout_seconds: 600
+
+# Retry configuration
+retry:
+  # Default max retries for tasks
+  max_retries: 3
+
+  # Initial delay before first retry (seconds)
+  base_delay_seconds: 2.0
+
+  # Multiplier for exponential backoff
+  backoff_multiplier: 2.0
+
+# Task registration
+tasks:
+  # Import example tasks
+  modules:
+    - examples.tasks
+
+# Logging configuration
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: DEBUG
+
+  # Log format
+  format: simple

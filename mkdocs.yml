@@ -1,0 +1,75 @@
+site_name: TaskLib Documentation
+site_description: Simple, durable task queue for PostgreSQL
+site_author: TaskLib Contributors
+site_url: https://tasklib.example.com
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: indigo
+    accent: blue
+  features:
+    - content.code.copy
+    - content.code.select
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - search.highlight
+    - search.share
+
+plugins:
+  - search
+  - social
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - tables
+  - toc:
+      title: "On this page"
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quick-start.md
+      - Your First Task: getting-started/first-task.md
+  - Guides:
+      - Task Definition: guides/task-definition.md
+      - Task Submission: guides/task-submission.md
+      - Running Workers: guides/workers.md
+      - Monitoring: guides/monitoring.md
+      - Error Handling: guides/error-handling.md
+      - Testing: guides/testing.md
+  - API Reference:
+      - Core API: api/core.md
+      - Configuration: api/configuration.md
+      - Task Worker: api/worker.md
+      - Exceptions: api/exceptions.md
+  - Schema:
+      - Database Schema: schema/database.md
+      - Task States: schema/task-states.md
+      - Migrations: schema/migrations.md
+      - Final Schema Details: schema/final-schema.md
+  - Architecture & Design:
+      - Design Overview: design.md
+      - Full Specification: spec.md
+      - Implementation Details: dev-experience.md
+  - Project Info:
+      - Project Summary: project-summary.md
+      - Final Summary: final-summary.md
+      - Test Coverage: test-coverage.md
+      - Testing Guide: testing.md
+      - Changelog: changelog.md
+  - Examples:
+      - Simple Example: examples/simple.md
+  - FAQ: faq.md
+  - Contributing: contributing.md
+
+copyright: Copyright &copy; 2025 TaskLib Contributors. All rights reserved. Licensed under MIT.

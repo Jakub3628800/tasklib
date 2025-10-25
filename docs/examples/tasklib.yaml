@@ -1,0 +1,73 @@
+# TaskLib Configuration Example
+#
+# Use with: tasklib-worker --config tasklib.yaml
+# Or: cp this file to your project as tasklib.yaml
+
+# Database configuration (required)
+database:
+  url: postgresql://user:password@localhost:5432/tasklib
+  # Optional: connection pool settings for production
+  # pool_size: 10
+  # max_overflow: 20
+
+# Worker settings
+worker:
+  # Unique identifier for this worker (auto-generated if not provided)
+  id: worker-1
+
+  # Number of tasks to execute concurrently
+  # Tune based on your workload:
+  # - I/O bound: 16-32
+  # - CPU bound: 4-8 (match your CPU cores)
+  concurrency: 4
+
+  # How often to check for new tasks (in seconds)
+  # Lower = more responsive but higher CPU
+  poll_interval_seconds: 1.0
+
+  # Timeout for claiming tasks (in seconds)
+  # Used to detect dead workers
+  lock_timeout_seconds: 600
+
+# Retry configuration
+retry:
+  # Default max retries for tasks (can be overridden per task)
+  max_retries: 3
+
+  # Initial delay before first retry (seconds)
+  base_delay_seconds: 5.0
+
+  # Multiplier for exponential backoff
+  # delay = base_delay * (multiplier ^ attempt)
+  # Example: 5s → 10s → 20s → 40s
+  backoff_multiplier: 2.0
+
+# Task registration
+tasks:
+  # Python modules to import to register tasks
+  # These modules should contain @tasklib.task decorated functions
+  modules:
+    - myapp.tasks
+    - myapp.admin.tasks
+    - myapp.notifications.tasks
+
+  # Optional: default timeout for all tasks (seconds)
+  # timeout_seconds: 300
+
+# Logging configuration
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: INFO
+
+  # Optional: log format (simple or json)
+  format: simple
+
+  # Optional: log to file
+  # file: /var/log/tasklib/worker.log
+  # max_size_mb: 100
+  # backup_count: 5
+
+# Optional: Monitoring
+# monitoring:
+#   prometheus_port: 8001
+#   log_stats_interval_seconds: 60
