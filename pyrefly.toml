@@ -1,2 +1,0 @@
-# Exclude dashboard from type checking since it's a standalone application
-ignored_paths = ["src/dashboard"]
