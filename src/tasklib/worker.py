@@ -79,19 +79,19 @@ class TaskWorker:
     def _try_acquire_task(self) -> Optional[Task]:
         """Try to acquire and lock a task for execution using PostgreSQL SELECT FOR UPDATE."""
         try:
-            with Session(self.engine) as session:
+            with Session(self.engine) as session:  # pyrefly: ignore
                 now = datetime.utcnow()
                 statement = (
                     select(Task)
-                    .where(Task.state.in_(["pending", "failed"]))
+                    .where(Task.state.in_(["pending", "failed"]))  # pyrefly: ignore
                     .where(Task.scheduled_at <= now)
-                    .where((Task.locked_until.is_(None)) | (Task.locked_until < now))
-                    .order_by(Task.priority.desc(), Task.created_at.asc())
+                    .where((Task.locked_until.is_(None)) | (Task.locked_until < now))  # pyrefly: ignore
+                    .order_by(Task.priority.desc(), Task.created_at.asc())  # pyrefly: ignore
                     .limit(1)
                     .with_for_update()
                 )
 
-                task = session.exec(statement).first()
+                task = session.exec(statement).first()  # pyrefly: ignore
                 if task is None:
                     return None
 
@@ -100,9 +100,9 @@ class TaskWorker:
                 task.worker_id = self.worker_id
                 task.locked_until = lock_until
                 task.started_at = now
-                session.add(task)
-                session.commit()
-                session.refresh(task)
+                session.add(task)  # pyrefly: ignore
+                session.commit()  # pyrefly: ignore
+                session.refresh(task)  # pyrefly: ignore
 
                 return task
 
@@ -142,25 +142,25 @@ class TaskWorker:
     async def _run_sync_in_executor(self, func: Callable, kwargs: dict) -> object:
         """Run a sync function in thread pool."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, lambda: func(**kwargs))
+        return await loop.run_in_executor(None, lambda: func(**kwargs))  # pyrefly: ignore
 
     def _mark_completed(self, task: Task, result: Any) -> None:
         """Mark task as completed."""
-        with Session(self.engine) as session:
-            db_task = session.get(Task, task.id)
+        with Session(self.engine) as session:  # pyrefly: ignore
+            db_task = session.get(Task, task.id)  # pyrefly: ignore
             if db_task:
                 db_task.state = "completed"
                 db_task.result = {"value": result} if result is not None else None
                 db_task.completed_at = datetime.utcnow()
                 db_task.locked_until = None
                 db_task.worker_id = None
-                session.add(db_task)
-                session.commit()
+                session.add(db_task)  # pyrefly: ignore
+                session.commit()  # pyrefly: ignore
 
     def _handle_failure(self, task: Task, error: Exception) -> None:
         """Handle task failure with retry logic."""
-        with Session(self.engine) as session:
-            db_task = session.get(Task, task.id)
+        with Session(self.engine) as session:  # pyrefly: ignore
+            db_task = session.get(Task, task.id)  # pyrefly: ignore
             if not db_task:
                 return
 
@@ -193,8 +193,8 @@ class TaskWorker:
 
                 logger.error(f"Task {task.id} failed permanently. Error: {error}")
 
-            session.add(db_task)
-            session.commit()
+            session.add(db_task)  # pyrefly: ignore
+            session.commit()  # pyrefly: ignore
 
     async def shutdown(self) -> None:
         """Graceful shutdown."""

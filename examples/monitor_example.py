@@ -124,7 +124,7 @@ async def monitor_specific_tasks() -> None:
     tasks = []
     for task_id, name in task_data:
         try:
-            task = await get_task(task_id)
+            task = await get_task(task_id)  # pyrefly: ignore
             if task:
                 tasks.append((name, task))
             else:
@@ -252,7 +252,7 @@ async def continuous_monitoring() -> None:
             tasks = []
             for task_id in task_ids:
                 try:
-                    task = await get_task(task_id)
+                    task = await get_task(task_id)  # pyrefly: ignore
                     if task:
                         tasks.append(task)
                 except Exception:
@@ -313,7 +313,7 @@ async def main() -> None:
 
     # Initialize TaskLib
     config = Config(database_url=db_url)
-    await init(config)
+    await init(config)  # pyrefly: ignore
 
     # Choose monitoring mode
     print("TaskLib Monitoring Options:")

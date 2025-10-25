@@ -115,7 +115,7 @@ def init_cmd(
         click.secho("✅ Database initialized successfully", fg="green")
         click.echo(f"   Database: {database}")
         click.echo(f"   Host: {host}:{port}")
-        click.echo(f"   Tables: tasks")
+        click.echo("   Tables: tasks")
 
     except Exception as e:
         raise click.ClickException(f"Database error: {e}")

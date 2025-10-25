@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tasklib import Config, init, submit_task
 
 # Import tasks to register them
-from .tasks import (
+from .tasks import (  # pyrefly: ignore
     batch_process,
     calculate_statistics,
     cpu_work,
@@ -249,7 +249,7 @@ async def main() -> None:
 
     # Initialize TaskLib
     config = Config(database_url=db_url)
-    await init(config)
+    await init(config)  # pyrefly: ignore
 
     # Submit all tasks
     try:

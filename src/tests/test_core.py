@@ -11,7 +11,7 @@ from tasklib import Config, task
 def config():
     """Create test config."""
     return Config(
-        database_url="sqlite:///test.db",  # In-memory for testing
+        database_url="sqlite:///:memory:",  # In-memory for testing
         max_retries=2,
         base_retry_delay_seconds=0.1,
     )
@@ -21,6 +21,7 @@ def config():
 def clear_task_registry():
     """Clear task registry before each test."""
     from tasklib.core import _task_registry
+
     _task_registry.clear()
     yield
     _task_registry.clear()
@@ -37,6 +38,7 @@ def init_tasklib(config):
 class TestTaskDecorator:
     """Test task decorator."""
 
+    @pytest.mark.unit
     def test_register_task(self, init_tasklib):
         """Test registering a task."""
 
@@ -47,6 +49,7 @@ class TestTaskDecorator:
         registered = tasklib.get_registered_tasks()
         assert "my_task" in registered
 
+    @pytest.mark.unit
     def test_duplicate_task_name(self, init_tasklib):
         """Test that duplicate task names raise error."""
 
@@ -60,6 +63,7 @@ class TestTaskDecorator:
             def duplicate():
                 pass
 
+    @pytest.mark.unit
     def test_task_with_options(self, init_tasklib):
         """Test task with custom options."""
 
@@ -76,6 +80,7 @@ class TestTaskDecorator:
 class TestSubmitTask:
     """Test task submission."""
 
+    @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_submit_task(self, init_tasklib):
         """Test submitting a task."""
@@ -95,6 +100,7 @@ class TestSubmitTask:
         assert t.kwargs == {"x": 5}
         assert t.state == "pending"
 
+    @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_submit_with_delay(self, init_tasklib):
         """Test submitting task with delay."""
@@ -105,12 +111,14 @@ class TestSubmitTask:
 
         task_id = await tasklib.submit_task(delayed_task, delay_seconds=10)
         t = tasklib.get_task(task_id)
+        assert t is not None
 
         # Verify scheduled_at is in the future
         from datetime import datetime
 
         assert t.scheduled_at > datetime.utcnow()
 
+    @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_submit_unregistered_task(self, init_tasklib):
         """Test submitting unregistered task raises error."""
@@ -121,6 +129,7 @@ class TestSubmitTask:
         with pytest.raises(tasklib.TaskLibError):
             await tasklib.submit_task(unregistered)
 
+    @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_submit_with_invalid_args(self, init_tasklib):
         """Test submitting task with invalid arguments."""
@@ -137,6 +146,7 @@ class TestSubmitTask:
 class TestTaskListing:
     """Test task listing and filtering."""
 
+    @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_list_tasks(self, init_tasklib):
         """Test listing tasks."""
@@ -156,6 +166,7 @@ class TestTaskListing:
         tasks = tasklib.list_tasks()
         assert len(tasks) >= 2
 
+    @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_list_by_state(self, init_tasklib):
         """Test listing tasks by state."""
@@ -170,6 +181,7 @@ class TestTaskListing:
         pending = tasklib.list_tasks(state="pending")
         assert any(t.id == task_id for t in pending)
 
+    @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_list_by_name(self, init_tasklib):
         """Test listing tasks by name."""
@@ -187,6 +199,7 @@ class TestTaskListing:
 class TestConfiguration:
     """Test configuration."""
 
+    @pytest.mark.unit
     def test_config_creation(self):
         """Test creating config."""
         config = Config(
@@ -199,6 +212,7 @@ class TestConfiguration:
         assert config.max_retries == 5
         assert config.base_retry_delay_seconds == 2.0
 
+    @pytest.mark.unit
     def test_config_defaults(self):
         """Test config defaults."""
         config = Config(database_url="postgresql://localhost/test")

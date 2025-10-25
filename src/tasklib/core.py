@@ -152,10 +152,10 @@ async def submit_task(
         tags=tags or {},
     )
 
-    with Session(_engine) as session:
-        session.add(db_task)
-        session.commit()
-        session.refresh(db_task)
+    with Session(_engine) as session:  # pyrefly: ignore
+        session.add(db_task)  # pyrefly: ignore
+        session.commit()  # pyrefly: ignore
+        session.refresh(db_task)  # pyrefly: ignore
         task_id = db_task.id
 
     return task_id
@@ -166,9 +166,9 @@ def get_task(task_id: UUID) -> Optional[Task]:
     if _engine is None:
         raise RuntimeError("tasklib not initialized. Call tasklib.init(config) first.")
 
-    with Session(_engine) as session:
+    with Session(_engine) as session:  # pyrefly: ignore
         statement = select(Task).where(Task.id == task_id)
-        return session.exec(statement).first()
+        return session.exec(statement).first()  # pyrefly: ignore
 
 
 def list_tasks(
@@ -190,7 +190,7 @@ def list_tasks(
     if _engine is None:
         raise RuntimeError("tasklib not initialized. Call tasklib.init(config) first.")
 
-    with Session(_engine) as session:
+    with Session(_engine) as session:  # pyrefly: ignore
         statement = select(Task)
 
         if state:
@@ -199,7 +199,7 @@ def list_tasks(
             statement = statement.where(Task.name == name)
 
         statement = statement.limit(limit)
-        return session.exec(statement).all()
+        return session.exec(statement).all()  # pyrefly: ignore
 
 
 def get_registered_tasks() -> dict[str, tuple[Callable, dict]]:

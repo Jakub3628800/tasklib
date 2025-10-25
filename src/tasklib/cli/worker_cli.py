@@ -138,7 +138,9 @@ def worker(
 
     # Worker-specific parameters
     worker_concurrency = concurrency or (config_data.get("worker", {}).get("concurrency") if config else None) or 1
-    worker_poll_interval = poll_interval or (config_data.get("worker", {}).get("poll_interval_seconds") if config else None) or 1.0
+    worker_poll_interval = (
+        poll_interval or (config_data.get("worker", {}).get("poll_interval_seconds") if config else None) or 1.0
+    )
 
     logger.info("Starting TaskLib worker...")
     logger.info(f"  Worker ID: {cfg.worker_id}")
