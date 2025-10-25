@@ -205,27 +205,3 @@ class TaskWorker:
             await asyncio.gather(*self._running_tasks, return_exceptions=True)
 
         logger.info("Worker shutdown complete")
-
-
-class WorkerContext:
-    """Context for managing worker lifecycle."""
-
-    def __init__(self, worker: TaskWorker):
-        self.worker = worker
-        self.running = True
-
-    async def run(self) -> None:
-        """Run worker with graceful shutdown support."""
-        loop = asyncio.get_event_loop()
-
-        def handle_shutdown(signum: int, frame: object) -> None:
-            logger.info("Received shutdown signal, gracefully stopping...")
-            self.running = False
-
-        loop.add_signal_handler(signal.SIGTERM, handle_shutdown)
-        loop.add_signal_handler(signal.SIGINT, handle_shutdown)
-
-        try:
-            await self.worker.run()
-        except KeyboardInterrupt:
-            logger.info("Interrupted, shutting down...")
