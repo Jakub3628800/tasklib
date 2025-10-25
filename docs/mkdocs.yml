@@ -46,6 +46,5 @@ nav:
       - Core: api/core.md
       - Configuration: api/configuration.md
       - Worker: api/worker.md
-  - Contributing: contributing.md
 
 copyright: Copyright &copy; 2025 TaskLib Contributors. All rights reserved. Licensed under MIT.
