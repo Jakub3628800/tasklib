@@ -38,7 +38,7 @@ class Task(SQLModel, table=True):
     priority: int = Field(default=0, index=True)
     tags: dict = Field(default_factory=dict, sa_column=Column(JSON))
 
-    class Config:
+    class Config:  # pyrefly: ignore
         """SQLModel config."""
 
         arbitrary_types_allowed = True

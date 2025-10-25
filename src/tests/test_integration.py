@@ -1,7 +1,6 @@
 """Integration tests for tasklib with real PostgreSQL."""
 
 import asyncio
-import os
 import time
 from uuid import UUID
 
@@ -9,25 +8,24 @@ import pytest
 
 import tasklib
 
-
-# Use PostgreSQL from docker-compose (or fallback to default)
-DB_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://tasklib:tasklib_pass@localhost:5432/tasklib")
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture(autouse=True)
 def clear_task_registry():
     """Clear task registry before each test."""
     from tasklib.core import _task_registry
+
     _task_registry.clear()
     yield
     _task_registry.clear()
 
 
 @pytest.fixture
-def config():
+def config(database_url):
     """Create config for integration tests."""
     return tasklib.Config(
-        database_url=DB_URL,
+        database_url=database_url,
         max_retries=2,
         base_retry_delay_seconds=0.1,
         lock_timeout_seconds=5,
@@ -35,24 +33,24 @@ def config():
 
 
 @pytest.fixture
-def init_db(config):
+def init_db(config, database_url):  # type: ignore[no-untyped-def]
     """Initialize database for tests."""
     tasklib.init(config)
     # Clear any existing tasks
-    from sqlmodel import Session, delete, create_engine
-    from tasklib.db import Task
+    from sqlmodel import Session, delete, create_engine  # type: ignore[import-not-found]
+    from tasklib.db import Task  # type: ignore[import-not-found]
 
-    engine = create_engine(DB_URL)
-    with Session(engine) as session:
-        session.exec(delete(Task))
-        session.commit()
+    engine = create_engine(database_url)
+    with Session(engine) as session:  # type: ignore[no-untyped-call,assignment]
+        session.exec(delete(Task))  # type: ignore[attr-defined]
+        session.commit()  # type: ignore[attr-defined]
 
     yield config
 
     # Cleanup
-    with Session(engine) as session:
-        session.exec(delete(Task))
-        session.commit()
+    with Session(engine) as session:  # type: ignore[no-untyped-call,assignment]
+        session.exec(delete(Task))  # type: ignore[attr-defined]
+        session.commit()  # type: ignore[attr-defined]
 
 
 class TestTaskSubmissionAndExecution:
@@ -91,6 +89,7 @@ class TestTaskSubmissionAndExecution:
 
         # Verify task completed
         completed_task = tasklib.get_task(task_id)
+        assert completed_task is not None
         assert tasklib.is_completed(completed_task)
         assert completed_task.result == {"value": 8}
 
@@ -107,6 +106,7 @@ class TestTaskSubmissionAndExecution:
 
         # Check immediately - should still be pending
         task = tasklib.get_task(task_id)
+        assert task is not None
         assert tasklib.is_pending(task)
 
         # scheduled_at should be in the future
@@ -124,6 +124,7 @@ class TestTaskSubmissionAndExecution:
 
         task_id = await tasklib.submit_task(custom_task)
         task = tasklib.get_task(task_id)
+        assert task is not None
 
         assert task.max_retries == 5
         assert task.timeout_seconds == 30
@@ -183,6 +184,7 @@ class TestTaskFailureAndRetry:
         await run_worker(duration=1.0)
 
         task = tasklib.get_task(task_id)
+        assert task is not None
         assert tasklib.is_failed(task)
         assert task.retry_count == 1
         assert task.next_retry_at is not None
@@ -193,6 +195,7 @@ class TestTaskFailureAndRetry:
 
         # Should now be completed
         task = tasklib.get_task(task_id)
+        assert task is not None
         assert tasklib.is_completed(task)
         assert task.result == {"value": "success"}
 
@@ -220,6 +223,7 @@ class TestTaskFailureAndRetry:
             await asyncio.sleep(0.2)
 
         task = tasklib.get_task(task_id)
+        assert task is not None
         # Should be failed and max retries reached
         assert tasklib.is_failed(task)
         assert task.retry_count >= task.max_retries
@@ -248,8 +252,10 @@ class TestTaskFailureAndRetry:
         await run_worker()
 
         task = tasklib.get_task(task_id)
+        assert task is not None
         # Should be failed due to timeout
         assert tasklib.is_failed(task)
+        assert task.error is not None
         assert "timeout" in task.error.lower()
 
 
@@ -267,6 +273,7 @@ class TestPydanticValidation:
         # Valid submission
         task_id = await tasklib.submit_task(typed_task, x=5, name="test")
         task = tasklib.get_task(task_id)
+        assert task is not None
         assert task.kwargs == {"x": 5, "name": "test"}
 
     @pytest.mark.asyncio
@@ -304,6 +311,7 @@ class TestPydanticValidation:
         # Only x provided
         task_id = await tasklib.submit_task(optional_param_task, x=5)
         task = tasklib.get_task(task_id)
+        assert task is not None
         assert task.kwargs == {"x": 5, "y": 10}
 
 
@@ -344,6 +352,7 @@ class TestMultiWorker:
         # All tasks should be completed
         for task_id in task_ids:
             task = tasklib.get_task(task_id)
+            assert task is not None
             assert tasklib.is_completed(task)
 
 
@@ -398,6 +407,7 @@ class TestTaskMonitoring:
 
         task_id = await tasklib.submit_task(result_helper_task)
         task = tasklib.get_task(task_id)
+        assert task is not None
 
         assert tasklib.is_pending(task)
         assert not tasklib.is_completed(task)
@@ -417,6 +427,7 @@ class TestTaskMonitoring:
 
         # Check completed state
         task = tasklib.get_task(task_id)
+        assert task is not None
         assert tasklib.is_completed(task)
         assert tasklib.has_result(task)
         assert not tasklib.has_error(task)

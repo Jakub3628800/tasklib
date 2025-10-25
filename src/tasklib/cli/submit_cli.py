@@ -120,11 +120,7 @@ def submit_task_cmd(
 
         func, _ = _task_registry[task_name]
 
-        task_id = await submit_func(
-            func,
-            delay_seconds=delay,
-            **kwargs
-        )
+        task_id = await submit_func(func, delay_seconds=delay, **kwargs)
         return task_id
 
     try:

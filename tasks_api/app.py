@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, desc, func, and_
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 
-from models import Base, Task, TaskResponse, TaskStats, WorkerStats
+from models import Base, Task, TaskResponse, TaskStats, WorkerStats  # pyrefly: ignore
 
 # Database setup
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/tasklib")
@@ -26,7 +26,7 @@ def get_db():
         db.close()
 
 
-@app.on_event("startup")
+@app.on_event("startup")  # pyrefly: ignore
 def startup():
     """Create tables if they don't exist"""
     Base.metadata.create_all(bind=engine)
